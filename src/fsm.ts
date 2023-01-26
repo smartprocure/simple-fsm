@@ -56,11 +56,12 @@ export function fsm<T extends string>(
      */
     change,
     /**
-     * Wait for state to change to one of `newStates`. Times out after 5 seconds.
+     * Wait for state to change to one of `newStates`. Times out after 5 seconds
+     * by default.
      */
     waitForChange,
     /**
-     * Is state currently one of `states`.
+     * Is state currently one of `states`?
      */
     is,
   }
