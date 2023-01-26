@@ -5,7 +5,7 @@ import makeError from 'make-error'
 
 export const StateError = makeError('StateError')
 
-const debug = _debug('simple-fsm')
+const debug = _debug('simple-machines')
 
 /**
  * Simple finite state machine with explicit allowed state transitions,

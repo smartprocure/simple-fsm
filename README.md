@@ -1,4 +1,4 @@
-# simple-fsm
+# simple-machines
 
 Simple finite state machine with explicit allowed state transitions,
 initial state, and options around how long to wait for state transitions
@@ -10,7 +10,7 @@ The state machine will throw if an invalid state transition is attempted.
 ## Example
 
 ```typescript
-import { fsm, StateTransitions } from 'simple-fsm'
+import { fsm, StateTransitions } from 'simple-machines'
 import timers from 'timers/promises'
 
 type State = 'starting' | 'started' | 'stopping' | 'stopped'
