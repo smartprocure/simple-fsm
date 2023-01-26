@@ -22,11 +22,15 @@ export function fsm<T extends string>(
   const name = options.name || 'fsm'
   const onStateChange = options.onStateChange
 
+  const get = () => state
+
   const is = (...states: T[]) => states.includes(state)
+
+  const canChange = (newState: T) => stateTransitions[state]?.includes(newState)
 
   const change = (newState: T) => {
     debug('%s changing state from %s to %s', name, state, newState)
-    if (!stateTransitions[state]?.includes(newState)) {
+    if (!canChange(newState)) {
       throw new StateError(
         `${name} invalid state transition - ${state} to ${newState}`
       )
@@ -51,6 +55,10 @@ export function fsm<T extends string>(
 
   return {
     /**
+     * Get the current state. Prefer `is` for checking the state.
+     */
+    get,
+    /**
      * Transition state to `newState`. Throws if `newState` is not a valid
      * transitional state for the current state.
      */
@@ -64,6 +72,9 @@ export function fsm<T extends string>(
      * Is state currently one of `states`?
      */
     is,
+    /**
+     * Can the machine be transitioned to `state`?
+     */
+    canChange,
   }
 }
-
