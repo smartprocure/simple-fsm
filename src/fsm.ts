@@ -5,7 +5,7 @@ import makeError from 'make-error'
 
 export const StateError = makeError('StateError')
 
-const debug = _debug('mongochangestream')
+const debug = _debug('simple-fsm')
 
 /**
  * Simple finite state machine with explicit allowed state transitions,

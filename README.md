@@ -10,49 +10,70 @@ The state machine will throw if an invalid state transition is attempted.
 ## Example
 
 ```typescript
-import { StateTransitions } from 'simple-fsm'
+import { fsm, StateTransitions } from 'simple-fsm'
+import timers from 'timers/promises'
 
 type State = 'starting' | 'started' | 'stopping' | 'stopped'
 
 const stateTransitions: StateTransitions<State> = {
-    stopped: ['starting'],
-    starting: ['started'],
-    started: ['stopping'],
-    stopping: ['stopped'],
+  stopped: ['starting'],
+  starting: ['started'],
+  started: ['stopping'],
+  stopping: ['stopped'],
 }
 
 const state = fsm<State>(stateTransitions, 'stopped', {
-    name: 'Process Records',
-    onStateChange(change) {
-        console.log(change)
-    },
+  name: 'Process Records',
+  onStateChange(change) {
+    console.log(change)
+  },
 })
 
-const start = () => {
-    // Nothing to do
-    if (state.is('starting', 'started')) {
-        return
-    }
-    if (state.is('stopping')) {
-        // Wait until stopping -> stopped
-        await state.waitForChange('stopped')
-    }
-    state.change('starting')
-    startTheProcess()
-    state.change('started')
+// Simulate connecting to db
+const connectToDb = async () => {
+  await timers.setTimeout(1000)
 }
 
-const stop = () => {
-    // Nothing to do
-    if (state.is('stopping', 'stopped')) {
-        return
-    }
-    if (state.is('starting')) {
-        // Wait until starting -> started
-        await state.waitForChange('started')
-    }
-    state.change('stopping')
-    await stopTheProcess()
-    state.change('stopped')
+const stopDoingStuff = async () => {
+  await timers.setTimeout(1000)
 }
+
+// Simulate work
+const doStuff = async () => {
+  while(true) {
+    await timers.setTimeout(250)
+  }
+}
+
+const start = async () => {
+  // Nothing to do
+  if (state.is('starting', 'started')) {
+    return
+  }
+  if (state.is('stopping')) {
+    // Wait until stopping -> stopped
+    await state.waitForChange('stopped')
+  }
+  state.change('starting')
+  await connectToDb()
+  doStuff()
+  state.change('started')
+}
+
+const stop = async () => {
+  // Nothing to do
+  if (state.is('stopping', 'stopped')) {
+    return
+  }
+  if (state.is('starting')) {
+    // Wait until starting -> started
+    await state.waitForChange('started')
+  }
+  state.change('stopping')
+  await stopDoingStuff()
+  state.change('stopped')
+}
+
+start()
+setTimeout(stop, 500)
 ```
