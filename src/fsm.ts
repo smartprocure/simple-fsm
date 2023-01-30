@@ -28,6 +28,15 @@ export function fsm<T extends string>(
 
   const canChange = (newState: T) => stateTransitions[state]?.includes(newState)
 
+  const _change = (newState: T) => {
+    const oldState = state
+    state = newState
+    debug('%s changed state from %s to %s', name, oldState, newState)
+    if (onStateChange) {
+      onStateChange({ name, from: oldState, to: newState })
+    }
+  }
+
   const change = (newState: T) => {
     debug('%s changing state from %s to %s', name, state, newState)
     if (!canChange(newState)) {
@@ -35,12 +44,7 @@ export function fsm<T extends string>(
         `${name} invalid state transition - ${state} to ${newState}`
       )
     }
-    const oldState = state
-    state = newState
-    debug('%s changed state from %s to %s', name, oldState, newState)
-    if (onStateChange) {
-      onStateChange({ name, from: oldState, to: newState })
-    }
+    _change(newState)
   }
 
   const waitForChange = (...newStates: T[]) => {
@@ -51,6 +55,15 @@ export function fsm<T extends string>(
       newStates.join(' or ')
     )
     return waitUntil(() => newStates.includes(state), options)
+  }
+
+  const maybeChange = (newState: T) => {
+    debug('%s changing state from %s to %s', name, state, newState)
+    if (canChange(newState)) {
+      _change(newState)
+      return true
+    }
+    return false
   }
 
   return {
@@ -76,5 +89,9 @@ export function fsm<T extends string>(
      * Can the machine be transitioned to `state`?
      */
     canChange,
+    /**
+     * Change states, if valid. Returns a boolean indicating if the state was changed.
+     */
+    maybeChange
   }
 }
