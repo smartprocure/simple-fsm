@@ -17,7 +17,9 @@
     "state",
     "machine",
     "fsm",
-    "simple"
+    "simple",
+    "await",
+    "wait"
   ],
   "author": "GovSpend",
   "license": "ISC",
