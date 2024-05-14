@@ -1,7 +1,7 @@
-import { waitUntil, Options } from 'async-wait-until'
 import _debug from 'debug'
 import { StateTransitions, FsmOptions } from './types'
 import makeError from 'make-error'
+import { waitUntil, WaitOptions } from 'prom-utils'
 
 export const StateError = makeError('StateError')
 
@@ -16,7 +16,7 @@ const debug = _debug('simple-machines')
 export function fsm<T extends string>(
   stateTransitions: StateTransitions<T>,
   initState: T,
-  options: Options & FsmOptions<T> = {}
+  options: WaitOptions & FsmOptions<T> = {}
 ) {
   let state = initState
   const name = options.name || 'fsm'
@@ -92,6 +92,6 @@ export function fsm<T extends string>(
     /**
      * Change states, if valid. Returns a boolean indicating if the state was changed.
      */
-    maybeChange
+    maybeChange,
   }
 }

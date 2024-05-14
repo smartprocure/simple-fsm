@@ -1,0 +1,116 @@
+import { fsm } from './fsm'
+import { StateTransitions } from './types'
+import { WaitOptions } from 'prom-utils'
+
+type State = 'starting' | 'started' | 'stopping' | 'stopped'
+
+const stateTransitions: StateTransitions<State> = {
+  stopped: ['starting'],
+  starting: ['started'],
+  started: ['stopping'],
+  stopping: ['stopped'],
+}
+
+const stateMachine = (options: WaitOptions = {}) =>
+  fsm<State>(stateTransitions, 'stopped', {
+    name: 'Example state machine',
+    onStateChange(change) {
+      console.log(change)
+    },
+    ...options,
+  })
+
+test('Initial state', async () => {
+  const state = stateMachine()
+
+  // Basic `get` test
+  expect(state.get()).toBe('stopped')
+
+  // Basic `is` tests
+  // NOTE: `is` can take multiple arguments, for a "one of" check
+  expect(state.is('stopped')).toBeTruthy()
+  expect(state.is('stopped', 'starting', 'started')).toBeTruthy()
+  expect(state.is('started')).toBeFalsy()
+  expect(state.is('started', 'starting', 'stopping')).toBeFalsy()
+})
+
+test('Valid state changes', () => {
+  const state = stateMachine()
+
+  for (const [oldState, newState] of [
+    ['stopped', 'starting'],
+    ['starting', 'started'],
+    ['started', 'stopping'],
+    ['stopping', 'stopped'],
+  ] as [State, State][]) {
+    expect(state.is(oldState)).toBeTruthy()
+    expect(state.canChange(newState)).toBeTruthy()
+    state.change(newState)
+  }
+})
+
+test('Invalid state changes', () => {
+  const state = stateMachine()
+  expect(state.is('stopped')).toBeTruthy()
+  expect(state.canChange('starting')).toBeTruthy()
+
+  for (const newState of ['stopped', 'stopping', 'started'] as State[]) {
+    expect(state.canChange(newState)).toBeFalsy()
+    expect(() => state.change(newState)).toThrow('invalid state transition')
+  }
+})
+
+test('maybeChange - valid transition', () => {
+  const state = stateMachine()
+  expect(state.is('stopped')).toBeTruthy()
+
+  expect(state.canChange('starting')).toBeTruthy()
+  expect(state.maybeChange('starting')).toBeTruthy()
+  expect(state.is('starting')).toBeTruthy()
+})
+
+test('maybeChange - invalid transition', () => {
+  const state = stateMachine()
+  expect(state.is('stopped')).toBeTruthy()
+
+  for (const newState of ['stopped', 'stopping', 'started'] as State[]) {
+    expect(state.canChange(newState)).toBeFalsy()
+    expect(state.maybeChange(newState)).toBeFalsy()
+    expect(state.is('stopped')).toBeTruthy()
+  }
+})
+
+test('Await immediate state change', async () => {
+  expect.assertions(4)
+  const state = stateMachine()
+  await expect(state.waitForChange('stopped')).resolves.toBeUndefined()
+  // `waitForChange` can take multiple arguments, for a "one of" check
+  await expect(
+    state.waitForChange('stopped', 'started')
+  ).resolves.toBeUndefined()
+
+  state.change('starting')
+  await expect(state.waitForChange('starting')).resolves.toBeUndefined()
+  await expect(
+    state.waitForChange('starting', 'stopping')
+  ).resolves.toBeUndefined()
+})
+
+test('Await eventual state change', async () => {
+  expect.assertions(2)
+  const state = stateMachine()
+
+  setTimeout(() => state.change('starting'), 250)
+  await expect(state.waitForChange('starting')).resolves.toBeUndefined()
+  setTimeout(() => state.change('started'), 250)
+  await expect(state.waitForChange('started')).resolves.toBeUndefined()
+})
+
+test('Eventual state change times out', async () => {
+  expect.assertions(1)
+  const state = stateMachine({ timeout: 250 })
+
+  await expect(state.waitForChange('starting')).rejects.toThrow(
+    'Did not complete in 250 ms'
+  )
+})
