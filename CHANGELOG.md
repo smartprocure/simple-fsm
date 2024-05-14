@@ -1,6 +1,8 @@
 # 0.4.0
 
 -   Use `waitUntil` from `prom-utils` library.
+-   Added tests.
+-   Bumped dependencies.
 
 # 0.3.0
 
