@@ -1,6 +1,6 @@
 {
   "name": "simple-machines",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Simple finite state machine that enables awaiting state changes",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
