@@ -1,6 +1,6 @@
 export type StateTransitions<T extends string> = Record<T, T[]>
 
-interface StateTransition<T> {
+export interface StateTransition<T> {
   name: string
   from: T
   to: T

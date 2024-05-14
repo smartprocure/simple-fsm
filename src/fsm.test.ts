@@ -1,5 +1,6 @@
 import { fsm } from './fsm'
 import { StateTransitions } from './types'
+import { WaitOptions } from 'prom-utils'
 
 type State = 'starting' | 'started' | 'stopping' | 'stopped'
 
@@ -10,12 +11,13 @@ const stateTransitions: StateTransitions<State> = {
   stopping: ['stopped'],
 }
 
-const stateMachine = () =>
+const stateMachine = (options: WaitOptions = {}) =>
   fsm<State>(stateTransitions, 'stopped', {
     name: 'Example state machine',
     onStateChange(change) {
       console.log(change)
     },
+    ...options,
   })
 
 test('Initial state', async () => {
@@ -79,24 +81,36 @@ test('maybeChange - invalid transition', () => {
 })
 
 test('Await immediate state change', async () => {
+  expect.assertions(4)
   const state = stateMachine()
-  expect(await state.waitForChange('stopped')).toBeTruthy()
+  await expect(state.waitForChange('stopped')).resolves.toBeUndefined()
   // `waitForChange` can take multiple arguments, for a "one of" check
-  expect(await state.waitForChange('stopped', 'started')).toBeTruthy()
+  await expect(
+    state.waitForChange('stopped', 'started')
+  ).resolves.toBeUndefined()
 
   state.change('starting')
-  expect(await state.waitForChange('starting')).toBeTruthy()
-  expect(await state.waitForChange('starting', 'stopping')).toBeTruthy()
+  await expect(state.waitForChange('starting')).resolves.toBeUndefined()
+  await expect(
+    state.waitForChange('starting', 'stopping')
+  ).resolves.toBeUndefined()
 })
 
 test('Await eventual state change', async () => {
+  expect.assertions(2)
   const state = stateMachine()
 
-  setTimeout(() => state.change('starting'), 500)
-  await state.waitForChange('starting')
+  setTimeout(() => state.change('starting'), 250)
+  await expect(state.waitForChange('starting')).resolves.toBeUndefined()
+  setTimeout(() => state.change('started'), 250)
+  await expect(state.waitForChange('started')).resolves.toBeUndefined()
+})
 
-  setTimeout(() => state.change('started'), 500)
-  setTimeout(() => state.change('stopping'), 1000)
-  setTimeout(() => state.change('stopped'), 1500)
-  await state.waitForChange('stopped')
+test('Eventual state change times out', async () => {
+  expect.assertions(1)
+  const state = stateMachine({ timeout: 250 })
+
+  await expect(state.waitForChange('starting')).rejects.toThrow(
+    'Did not complete in 250 ms'
+  )
 })
