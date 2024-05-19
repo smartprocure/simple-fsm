@@ -2,6 +2,7 @@
   "name": "simple-machines",
   "version": "0.4.0",
   "description": "Simple finite state machine that enables awaiting state changes",
+  "repository": "git@github.com:smartprocure/simple-machines.git",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
