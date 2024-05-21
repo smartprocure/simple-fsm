@@ -26,6 +26,7 @@ export function fsm<T extends string>(
 
   const is = (...states: T[]) => states.includes(state)
 
+  // @ts-ignore
   const canChange = (newState: T) => stateTransitions[state]?.includes(newState)
 
   const _change = (newState: T) => {
