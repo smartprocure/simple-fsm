@@ -1,3 +1,9 @@
+# 0.5.0
+
+-   Added `getElapsedTime` function.
+-   Added tests.
+-   Bumped dependencies.
+
 # 0.4.0
 
 -   Use `waitUntil` from `prom-utils` library.

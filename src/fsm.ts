@@ -1,7 +1,8 @@
 import _debug from 'debug'
-import { StateTransitions, FsmOptions } from './types'
 import makeError from 'make-error'
-import { waitUntil, WaitOptions } from 'prom-utils'
+import { WaitOptions, waitUntil } from 'prom-utils'
+
+import { FsmOptions, StateTransitions } from './types'
 
 export const StateError = makeError('StateError')
 
@@ -21,22 +22,54 @@ export function fsm<T extends string>(
   let state = initState
   const name = options.name || 'fsm'
   const onStateChange = options.onStateChange
+  let startTime = new Date()
 
+  /**
+   * Get the current state. Prefer `is` for checking the state.
+   */
   const get = () => state
 
+  /**
+   * Is state currently one of `states`?
+   */
   const is = (...states: T[]) => states.includes(state)
 
+  /**
+   * Can the machine be transitioned to `state`?
+   */
   const canChange = (newState: T) => stateTransitions[state]?.includes(newState)
+
+  /**
+   * The elapsed time in ms the FSM has been in the current state.
+   */
+  const getElapsedTime = () => new Date().getTime() - startTime.getTime()
 
   const _change = (newState: T) => {
     const oldState = state
     state = newState
-    debug('%s changed state from %s to %s', name, oldState, newState)
+    const elapsedTime = getElapsedTime()
+    debug(
+      '%s changed state from %s to %s. Elapsed %d ms',
+      name,
+      oldState,
+      newState,
+      elapsedTime
+    )
     if (onStateChange) {
-      onStateChange({ name, from: oldState, to: newState })
+      onStateChange({
+        name,
+        from: oldState,
+        to: newState,
+        elapsedTime,
+      })
     }
+    startTime = new Date()
   }
 
+  /**
+   * Transition state to `newState`. Throws if `newState` is not a valid
+   * transitional state for the current state.
+   */
   const change = (newState: T) => {
     debug('%s changing state from %s to %s', name, state, newState)
     if (!canChange(newState)) {
@@ -47,6 +80,10 @@ export function fsm<T extends string>(
     _change(newState)
   }
 
+  /**
+   * Wait for state to change to one of `newStates`. Times out after 5 seconds
+   * by default.
+   */
   const waitForChange = (...newStates: T[]) => {
     debug(
       '%s waiting for state change from %s to %s',
@@ -57,6 +94,9 @@ export function fsm<T extends string>(
     return waitUntil(() => newStates.includes(state), options)
   }
 
+  /**
+   * Change states, if valid. Returns a boolean indicating if the state was changed.
+   */
   const maybeChange = (newState: T) => {
     debug('%s changing state from %s to %s', name, state, newState)
     if (canChange(newState)) {
@@ -67,31 +107,12 @@ export function fsm<T extends string>(
   }
 
   return {
-    /**
-     * Get the current state. Prefer `is` for checking the state.
-     */
     get,
-    /**
-     * Transition state to `newState`. Throws if `newState` is not a valid
-     * transitional state for the current state.
-     */
     change,
-    /**
-     * Wait for state to change to one of `newStates`. Times out after 5 seconds
-     * by default.
-     */
     waitForChange,
-    /**
-     * Is state currently one of `states`?
-     */
     is,
-    /**
-     * Can the machine be transitioned to `state`?
-     */
     canChange,
-    /**
-     * Change states, if valid. Returns a boolean indicating if the state was changed.
-     */
     maybeChange,
+    getElapsedTime,
   }
 }
